@@ -32,30 +32,23 @@ class ToolExecutor:
         """Execute a tool and return the result message."""
         print_tool_info(tool_name, args)
         
-        if tool_name == "write_file":
-            diff = generate_diff(args.get('path', ''), args.get('command', 'create'), args.get('content', ''))
-            if diff:
-                print(f"\n{Colors.DIM}Diff:{Colors.RESET}")
-                print(colorize_diff(diff))
-                print()
-        
         if not self.confirm_tool(tool_name):
             print(f"{Colors.ERROR}✗ Cancelled{Colors.RESET}\n")
             return {
                 "role": "tool",
                 "tool_call_id": tool_call_id,
-                "content": [{"type": "document", "document": {"data": json.dumps({"error": "User declined to execute this tool"})}}]
+                "content": [{"type": "document", "document": {"data": json.dumps({"error": "The user declined the use of this tool. Ask them why they did so."})}}]
             }
         
-        print(f"{Colors.TOOL_OUTPUT}╭─ Output{Colors.RESET}")
+        print(f"{Colors.TOOL_RESULT}╭─ Result{Colors.RESET}")
         start_time = time.time()
         try:
             result = self.functions_map[tool_name](**args)
             elapsed = time.time() - start_time
-            print(f"{Colors.TOOL_OUTPUT}╰─{Colors.RESET} {Colors.SUCCESS}✓{Colors.RESET} {Colors.DIM}{elapsed:.2f}s{Colors.RESET}\n")
+            print(f"{Colors.TOOL_RESULT}╰─{Colors.RESET} {Colors.SUCCESS}✓{Colors.RESET} {Colors.DIM}{elapsed:.2f}s{Colors.RESET}\n")
         except Exception as e:
             elapsed = time.time() - start_time
-            print(f"{Colors.TOOL_OUTPUT}╰─{Colors.RESET} {Colors.ERROR}✗ {str(e)}{Colors.RESET} {Colors.DIM}{elapsed:.2f}s{Colors.RESET}\n")
+            print(f"{Colors.TOOL_RESULT}╰─{Colors.RESET} {Colors.ERROR}✗ {str(e)}{Colors.RESET} {Colors.DIM}{elapsed:.2f}s{Colors.RESET}\n")
             result = {"error": str(e)}
         
         return {

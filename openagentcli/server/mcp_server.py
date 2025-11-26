@@ -31,57 +31,38 @@ def read_file(path: str) -> str:
     return Path(path).read_text()
 
 @mcp.tool()
-def write_file(path: str, content: str, command: str = "create") -> str:
-    """Write content to a file. Commands: create, str_replace, insert, append."""
+def create_file(path: str, content: str) -> str:
+    """Create a new file with content. Fails if file exists."""
     err = validate_path(path)
     if err:
         raise ValueError(err)
-    
-    if command not in ["create", "str_replace", "insert", "append"]:
-        raise ValueError(f"invalid command '{command}'. Must be one of: create, str_replace, insert, append")
-    
     p = Path(path)
-    
-    if command == "create":
-        p.write_text(content)
-        return f"Created {path}"
-    
-    if not p.exists():
-        raise FileNotFoundError(f"{path} does not exist")
-    
-    existing = p.read_text()
-    
-    if command == "append":
-        p.write_text(existing + content)
-        return f"Appended to {path}"
-    
-    if command == "str_replace":
-        parts = content.split("|||", 1)
-        if len(parts) != 2:
-            raise ValueError("str_replace requires content in format 'old_str|||new_str'")
-        old_str, new_str = parts
-        if old_str not in existing:
-            raise ValueError(f"old_str not found in {path}. Make sure the old_str exactly matches the text in the file")
-        p.write_text(existing.replace(old_str, new_str, 1))
-        return f"Replaced in {path}"
-    
-    if command == "insert":
-        parts = content.split("|||", 1)
-        if len(parts) != 2:
-            raise ValueError("insert requires content in format 'line_number|||new_str'")
-        try:
-            line_num = int(parts[0])
-        except ValueError:
-            raise ValueError(f"line_number must be an integer, got '{parts[0]}'")
-        new_str = parts[1]
-        lines = existing.split('\n')
-        if line_num < 0 or line_num > len(lines):
-            raise ValueError(f"line_number {line_num} out of range (file has {len(lines)} lines)")
-        lines.insert(line_num, new_str)
-        p.write_text('\n'.join(lines))
-        return f"Inserted at line {line_num} in {path}"
-    
-    raise ValueError(f"Unknown command {command}")
+    if p.exists():
+        raise FileExistsError(f"{path} already exists")
+    p.write_text(content)
+    return f"Created {path}"
+
+@mcp.tool()
+def overwrite_file(path: str, content: str) -> str:
+    """Overwrite existing file with new content."""
+    err = validate_path(path, must_exist=True)
+    if err:
+        raise ValueError(err)
+    Path(path).write_text(content)
+    return f"Overwrote {path}"
+
+@mcp.tool()
+def replace_exact_in_file(path: str, old_str: str, new_str: str) -> str:
+    """Replace first exact match of old_str with new_str in file."""
+    err = validate_path(path, must_exist=True)
+    if err:
+        raise ValueError(err)
+    p = Path(path)
+    content = p.read_text()
+    if old_str not in content:
+        raise ValueError(f"old_str not found in {path}")
+    p.write_text(content.replace(old_str, new_str, 1))
+    return f"Replaced in {path}"
 
 @mcp.tool()
 def list_directory(path: str = ".", depth: int = 0) -> str:

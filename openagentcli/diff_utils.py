@@ -18,17 +18,17 @@ def colorize_diff(diff: str) -> str:
             lines.append(f"{Colors.DIM}{line}{Colors.RESET}")
     return '\n'.join(lines)
 
-def generate_diff(path: str, command: str, content: str) -> str:
-    """Generate unified diff for write_file operations."""
+def generate_diff(tool_name: str, path: str, **kwargs) -> str:
+    """Generate unified diff for file operations."""
     p = Path(path)
     
-    if command == "create":
+    if tool_name == "create_file":
         if p.exists():
             old_lines = p.read_text().splitlines(keepends=True)
-            new_lines = content.splitlines(keepends=True)
+            new_lines = kwargs['content'].splitlines(keepends=True)
             return ''.join(unified_diff(old_lines, new_lines, fromfile=f"a/{path}", tofile=f"b/{path}"))
         else:
-            new_lines = content.splitlines(keepends=True)
+            new_lines = kwargs['content'].splitlines(keepends=True)
             return ''.join(unified_diff([], new_lines, fromfile="/dev/null", tofile=f"b/{path}"))
     
     if not p.exists():
@@ -37,23 +37,11 @@ def generate_diff(path: str, command: str, content: str) -> str:
     old_content = p.read_text()
     old_lines = old_content.splitlines(keepends=True)
     
-    if command == "append":
-        new_lines = (old_content + content).splitlines(keepends=True)
-    elif command == "str_replace":
-        parts = content.split("|||", 1)
-        if len(parts) == 2:
-            new_lines = old_content.replace(parts[0], parts[1], 1).splitlines(keepends=True)
-        else:
-            return ""
-    elif command == "insert":
-        parts = content.split("|||", 1)
-        if len(parts) == 2:
-            lines = old_content.split('\n')
-            lines.insert(int(parts[0]), parts[1])
-            new_lines = '\n'.join(lines).splitlines(keepends=True)
-        else:
-            return ""
+    if tool_name == "overwrite_file":
+        new_lines = kwargs['content'].splitlines(keepends=True)
+    elif tool_name == "replace_exact_in_file":
+        new_lines = old_content.replace(kwargs['old_str'], kwargs['new_str'], 1).splitlines(keepends=True)
     else:
-        return ""
+        raise ValueError(f"Unknown tool_name: {tool_name}")
     
     return ''.join(unified_diff(old_lines, new_lines, fromfile=f"a/{path}", tofile=f"b/{path}"))

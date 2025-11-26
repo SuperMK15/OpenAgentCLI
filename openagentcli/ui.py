@@ -6,7 +6,7 @@ class Colors:
     USER = "\033[36m"
     ASSISTANT = "\033[35m"
     TOOL = "\033[33m"
-    TOOL_OUTPUT = "\033[90m"
+    TOOL_RESULT = "\033[90m"
     SUCCESS = "\033[32m"
     ERROR = "\033[31m"
     DIM = "\033[2m"

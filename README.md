@@ -25,6 +25,15 @@ Run the CLI:
 openagentcli
 ```
 
+## Commands
+
+- `/help` - Show available commands
+- `/tools` - List all available tools
+- `/tools <name>` - Show detailed information for a specific tool
+- `/clear` - Clear chat context
+- `/quit` - Exit the CLI
+- `!<command>` - Execute bash commands directly
+
 ## Structure
 
 - `openagentcli/models/` - AI model interfaces (BaseModel, CohereModel)

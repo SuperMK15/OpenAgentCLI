@@ -1,6 +1,41 @@
 import json
 from .ui import Colors
 
+def display_tool_list(tools: list):
+    """Display a list of all available tools."""
+    print(f"\n{Colors.BOLD}Available Tools:{Colors.RESET}\n")
+    for tool in tools:
+        name = tool["function"]["name"]
+        desc = tool["function"]["description"].split('\n')[0][:80]
+        print(f"  {Colors.TOOL}{name}{Colors.RESET}")
+        if desc:
+            print(f"    {Colors.DIM}{desc}{Colors.RESET}")
+    print()
+
+def display_tool_detail(tools: list, tool_name: str):
+    """Display detailed information about a specific tool."""
+    tool = next((t for t in tools if t["function"]["name"] == tool_name), None)
+    if not tool:
+        print(f"\n{Colors.DIM}Tool '{tool_name}' not found{Colors.RESET}\n")
+        return
+    
+    func = tool["function"]
+    print(f"\n{Colors.BOLD}{func['name']}{Colors.RESET}")
+    if func.get("description"):
+        print(f"\n{func['description']}")
+    
+    params = func.get("parameters", {}).get("properties", {})
+    required = func.get("parameters", {}).get("required", [])
+    
+    if params:
+        print(f"\n{Colors.BOLD}Parameters:{Colors.RESET}")
+        for param, schema in params.items():
+            req = " (required)" if param in required else ""
+            print(f"  {Colors.TOOL}{param}{Colors.RESET}{req}")
+            if schema.get("description"):
+                print(f"    {Colors.DIM}{schema['description']}{Colors.RESET}")
+    print()
+
 def print_tool_info(tool_name: str, args: dict):
     """Print informative output about tool execution."""
     print(f"\n{Colors.TOOL}╭─ {tool_name}{Colors.RESET}", end="")

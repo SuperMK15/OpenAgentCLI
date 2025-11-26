@@ -7,6 +7,7 @@ from openagentcli.models.cohere_model import CohereModel
 from openagentcli.server.mcp_server import mcp
 from openagentcli.ui import Colors, Spinner
 from openagentcli.tool_executor import ToolExecutor
+from openagentcli.tool_display import display_tool_list, display_tool_detail
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
@@ -39,7 +40,7 @@ class AgentCLI:
     
     def run(self):
         print(f"\n{Colors.BOLD}OpenAgentCLI{Colors.RESET} {Colors.DIM}v0.1.0{Colors.RESET}")
-        print(f"{Colors.DIM}Type 'quit' to exit, '!' prefix for direct bash commands{Colors.RESET}\n")
+        print(f"{Colors.DIM}Type /help for commands{Colors.RESET}\n")
 
         ctrl_c_waiting = False  # when True, next Ctrl+C on blank input exits
 
@@ -59,9 +60,33 @@ class AgentCLI:
                 ctrl_c_waiting = True
                 continue
             
-            if user_input.lower() == 'quit':
+            if user_input == '/quit':
                 print(f"\n{Colors.DIM}Goodbye!{Colors.RESET}\n")
                 break
+            
+            if user_input == '/help':
+                print(f"\n{Colors.BOLD}Commands:{Colors.RESET}")
+                print(f"  /help         - Show this help")
+                print(f"  /tools        - List all available tools")
+                print(f"  /tools <name> - Show details for a specific tool")
+                print(f"  /clear        - Clear chat context")
+                print(f"  /quit         - Exit the CLI")
+                print(f"  !<command>    - Execute bash command\n")
+                continue
+            
+            if user_input == '/tools':
+                display_tool_list(self.tools)
+                continue
+            
+            if user_input.startswith('/tools '):
+                tool_name = user_input[7:].strip()
+                display_tool_detail(self.tools, tool_name)
+                continue
+            
+            if user_input == '/clear':
+                self.messages = []
+                print(f"\n{Colors.DIM}Chat context cleared{Colors.RESET}\n")
+                continue
             
             if not user_input:
                 continue

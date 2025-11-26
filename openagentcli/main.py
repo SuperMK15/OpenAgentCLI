@@ -40,13 +40,24 @@ class AgentCLI:
     def run(self):
         print(f"\n{Colors.BOLD}OpenAgentCLI{Colors.RESET} {Colors.DIM}v0.1.0{Colors.RESET}")
         print(f"{Colors.DIM}Type 'quit' to exit, '!' prefix for direct bash commands{Colors.RESET}\n")
-        
+
+        ctrl_c_waiting = False  # when True, next Ctrl+C on blank input exits
+
         while True:
             try:
                 user_input = input(f"\001{Colors.USER}\002>\001{Colors.RESET}\002 ").strip()
+
+                if user_input:
+                    ctrl_c_waiting = False
+
             except KeyboardInterrupt:
-                print(f"\n\n{Colors.DIM}Goodbye!{Colors.RESET}\n")
-                break
+                if ctrl_c_waiting:
+                    print(f"\n{Colors.DIM}Goodbye!{Colors.RESET}\n")
+                    break
+
+                print(f"\n{Colors.DIM}Press Ctrl+C again to exit{Colors.RESET}")
+                ctrl_c_waiting = True
+                continue
             
             if user_input.lower() == 'quit':
                 print(f"\n{Colors.DIM}Goodbye!{Colors.RESET}\n")
@@ -55,6 +66,8 @@ class AgentCLI:
             if not user_input:
                 continue
             
+            ctrl_c_waiting = False
+
             if user_input.startswith('!'):
                 os.system(user_input[1:].strip())
                 print()

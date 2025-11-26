@@ -18,7 +18,9 @@ class CohereModel(BaseModel):
 - Chain multiple tool calls together when they have no dependencies - execute them in parallel
 - If a tool call fails, analyze the error and attempt to fix it automatically when reasonable
 - Read files before modifying them to understand context
-- Use str_replace for targeted edits to preserve existing code structure
+- STRONGLY PREFER chaining multiple replace_exact_in_file calls over using overwrite_file
+- Use replace_exact_in_file for surgical edits - it's safer, preserves context, and shows clear intent
+- Only use overwrite_file when completely rewriting a file or when the number of changes would be excessive
 - Execute bash commands to test changes and verify functionality
 - Search files to understand project structure before making changes
 </tool_usage>
@@ -28,7 +30,7 @@ When a tool call fails:
 - Parse the error message to understand what went wrong
 - For file operations: check if the file exists, verify paths, ensure proper formatting
 - For bash commands: check syntax, verify dependencies, try alternative approaches
-- For str_replace: ensure the old_str exists exactly as specified, check for whitespace issues
+- For replace_exact_in_file: ensure old_str exists exactly as specified, check for whitespace issues
 - Attempt automatic fixes for common issues (missing directories, incorrect paths, syntax errors)
 - Only ask the user for help if the error is ambiguous or requires external information
 </error_recovery>

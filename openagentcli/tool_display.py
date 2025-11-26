@@ -8,38 +8,27 @@ def print_tool_info(tool_name: str, args: dict):
     if tool_name == "shell":
         print(f"\n{Colors.TOOL}│{Colors.RESET} {Colors.DIM}${Colors.RESET} {args.get('command', '')}")
     
-    elif tool_name == "write_file":
+    elif tool_name in ["create_file", "overwrite_file"]:
         path = args.get('path', '')
-        command = args.get('command', 'create')
-        content = args.get('content', '')
+        print(f" {path}")
         
-        print(f" {Colors.DIM}{command}{Colors.RESET} {path}")
-        
-        if command == "create":
+        from .diff_utils import generate_diff, colorize_diff
+        diff = generate_diff(tool_name, **args)
+        if diff:
             print(f"{Colors.TOOL}│{Colors.RESET}")
-            for i, line in enumerate(content.split('\n')[:8]):
-                print(f"{Colors.TOOL}│{Colors.RESET} {Colors.DIFF_ADD}+{Colors.RESET} {line}")
-            if len(content.split('\n')) > 8:
-                remaining = len(content.split('\n')) - 8
-                print(f"{Colors.TOOL}│{Colors.RESET} {Colors.DIM}... {remaining} more lines{Colors.RESET}")
+            for line in colorize_diff(diff).split('\n'):
+                print(f"{Colors.TOOL}│{Colors.RESET} {line}")
+    
+    elif tool_name == "replace_exact_in_file":
+        path = args.get('path', '')
+        print(f" {path}")
         
-        elif command == "str_replace":
-            parts = content.split("|||", 1)
-            if len(parts) == 2:
-                old, new = parts
-                print(f"{Colors.TOOL}│{Colors.RESET}")
-                for line in old.split('\n')[:3]:
-                    print(f"{Colors.TOOL}│{Colors.RESET} {Colors.DIFF_REMOVE}-{Colors.RESET} {line}")
-                for line in new.split('\n')[:3]:
-                    print(f"{Colors.TOOL}│{Colors.RESET} {Colors.DIFF_ADD}+{Colors.RESET} {line}")
-        
-        elif command == "append":
+        from .diff_utils import generate_diff, colorize_diff
+        diff = generate_diff(tool_name, **args)
+        if diff:
             print(f"{Colors.TOOL}│{Colors.RESET}")
-            for line in content.split('\n')[:5]:
-                print(f"{Colors.TOOL}│{Colors.RESET} {Colors.DIFF_ADD}+{Colors.RESET} {line}")
-            if len(content.split('\n')) > 5:
-                remaining = len(content.split('\n')) - 5
-                print(f"{Colors.TOOL}│{Colors.RESET} {Colors.DIM}... {remaining} more lines{Colors.RESET}")
+            for line in colorize_diff(diff).split('\n'):
+                print(f"{Colors.TOOL}│{Colors.RESET} {line}")
     
     else:
         if args:

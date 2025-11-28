@@ -9,6 +9,7 @@ class Colors:
     TOOL_RESULT = "\033[90m"
     SUCCESS = "\033[32m"
     ERROR = "\033[31m"
+    WARNING = "\033[33m"
     DIM = "\033[2m"
     BOLD = "\033[1m"
     RESET = "\033[0m"

@@ -58,4 +58,51 @@ openagentcli
 
 ## Adding New Models
 
-Extend `BaseModel` and implement `chat()` and `chat_stream()` methods.
+1. Create a new adapter in `openagentcli/protocol/`:
+```python
+from openagentcli.protocol import ProtocolAdapter, Message, ToolDefinition
+
+class MyProviderAdapter(ProtocolAdapter):
+    # Override role strings if provider uses different names
+    ROLE_USER = "user"  # default
+    ROLE_ASSISTANT = "assistant"  # default
+    ROLE_TOOL = "tool"  # default
+    ROLE_SYSTEM = "system"  # default
+    
+    def to_provider_messages(self, messages: list[Message]) -> Any:
+        # Convert internal Message format to provider's format
+        pass
+    
+    def from_provider_response(self, response: Any) -> Message:
+        # Convert provider's response to internal Message format
+        pass
+    
+    def to_provider_tools(self, tools: list[ToolDefinition]) -> Any:
+        # Convert internal ToolDefinition to provider's format
+        pass
+    
+    def to_tool_result(self, tool_call_id: str, result: dict) -> Message:
+        # Convert tool result to internal Message format
+        pass
+```
+
+2. Create model class extending `BaseModel`:
+```python
+from openagentcli.models.base import BaseModel
+from openagentcli.protocol import Message, ToolDefinition
+
+class MyProviderModel(BaseModel):
+    def __init__(self):
+        super().__init__(MyProviderAdapter())
+        # Initialize your provider's client
+    
+    def chat(self, messages: list[Message], tools: list[ToolDefinition]) -> Message:
+        provider_messages = self.adapter.to_provider_messages(messages)
+        provider_tools = self.adapter.to_provider_tools(tools)
+        response = self.client.chat(...)  # Call provider API
+        return self.adapter.from_provider_response(response)
+    
+    def chat_stream(self, messages: list[Message], tools: list[ToolDefinition]) -> Message:
+        # Implement streaming if supported
+        pass
+```

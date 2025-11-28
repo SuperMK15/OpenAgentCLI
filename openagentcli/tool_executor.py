@@ -1,13 +1,14 @@
-import json
 import time
 from typing import Set, Dict, Callable
 from .ui import Colors
 from .tool_display import print_tool_info
 from .diff_utils import generate_diff, colorize_diff
+from openagentcli.protocol import Message, ProtocolAdapter
 
 class ToolExecutor:
-    def __init__(self, functions_map: Dict[str, Callable]):
+    def __init__(self, functions_map: Dict[str, Callable], adapter: ProtocolAdapter):
         self.functions_map = functions_map
+        self.adapter = adapter
         self.trusted_tools: Set[str] = {"read_file", "list_directory", "search_files_by_name", "search_files_by_content"}
     
     def confirm_tool(self, tool_name: str) -> bool:
@@ -28,17 +29,13 @@ class ToolExecutor:
             return True
         return choice == 'y'
     
-    def execute_tool(self, tool_name: str, args: dict, tool_call_id: str) -> dict:
+    def execute_tool(self, tool_name: str, args: dict, tool_call_id: str) -> Message:
         """Execute a tool and return the result message."""
         print_tool_info(tool_name, args)
         
         if not self.confirm_tool(tool_name):
             print(f"{Colors.ERROR}✗ Cancelled{Colors.RESET}\n")
-            return {
-                "role": "tool",
-                "tool_call_id": tool_call_id,
-                "content": [{"type": "document", "document": {"data": json.dumps({"error": "The user declined the use of this tool. Ask them why they did so."})}}]
-            }
+            return self.adapter.to_tool_result(tool_call_id, {"error": "The user declined the use of this tool. Ask them why they did so."})
         
         print(f"{Colors.TOOL_RESULT}╭─ Result{Colors.RESET}")
         start_time = time.time()
@@ -51,8 +48,4 @@ class ToolExecutor:
             print(f"{Colors.TOOL_RESULT}╰─{Colors.RESET} {Colors.ERROR}✗ {str(e)}{Colors.RESET} {Colors.DIM}{elapsed:.2f}s{Colors.RESET}\n")
             result = {"error": str(e)}
         
-        return {
-            "role": "tool",
-            "tool_call_id": tool_call_id,
-            "content": [{"type": "document", "document": {"data": json.dumps(result)}}]
-        }
+        return self.adapter.to_tool_result(tool_call_id, result)

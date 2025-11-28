@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from openagentcli.protocol import Message, ToolDefinition, ProtocolAdapter
 
 class BaseModel(ABC):
+    def __init__(self, adapter: ProtocolAdapter):
+        self.adapter = adapter
+    
     @abstractmethod
-    def chat(self, messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]) -> Any:
+    def chat(self, messages: list[Message], tools: list[ToolDefinition]) -> Message:
         pass
     
     @abstractmethod
-    def chat_stream(self, messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]) -> Any:
+    def chat_stream(self, messages: list[Message], tools: list[ToolDefinition]) -> Message:
         pass

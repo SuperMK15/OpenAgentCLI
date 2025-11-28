@@ -1,4 +1,3 @@
-import json
 import asyncio
 import os
 import readline
@@ -9,32 +8,30 @@ from openagentcli.ui import Colors, Spinner
 from openagentcli.chat_storage import ChatStorage
 from openagentcli.tool_executor import ToolExecutor
 from openagentcli.tool_display import display_tool_list, display_tool_detail
+from openagentcli.protocol import Message, ToolDefinition, Role
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 class AgentCLI:
     def __init__(self):
         self.model = CohereModel()
-        self.messages = []
-        self.tools = asyncio.run(self._get_tools())
+        self.messages: list[Message] = []
+        self.tools: list[ToolDefinition] = asyncio.run(self._get_tools())
         functions_map = asyncio.run(self._get_functions())
-        self.executor = ToolExecutor(functions_map)
+        self.executor = ToolExecutor(functions_map, self.model.adapter)
         self.storage = ChatStorage()
         
         readline.parse_and_bind(r'"\e[A": previous-history')
         readline.parse_and_bind(r'"\e[B": next-history')
     
-    async def _get_tools(self):
+    async def _get_tools(self) -> list[ToolDefinition]:
         tools = []
         for tool in await mcp.list_tools():
-            tools.append({
-                "type": "function",
-                "function": {
-                    "name": tool.name,
-                    "description": tool.description or "",
-                    "parameters": tool.inputSchema or {"type": "object", "properties": {}}
-                }
-            })
+            tools.append(ToolDefinition(
+                name=tool.name,
+                description=tool.description or "",
+                parameters=tool.inputSchema or {"type": "object", "properties": {}}
+            ))
         return tools
     
     async def _get_functions(self):
@@ -160,7 +157,7 @@ class AgentCLI:
                 print()
                 continue
             
-            self.messages.append({"role": "user", "content": user_input})
+            self.messages.append(Message(role=Role.USER, content=user_input))
             
             while True:
                 spinner = Spinner()
@@ -174,24 +171,18 @@ class AgentCLI:
                 finally:
                     spinner.stop()
                 
-                if not response.message.tool_calls:
-                    print(f"\n{Colors.ASSISTANT}> {Colors.RESET}{response.message.content[0].text}\n")
-                    self.messages.append({"role": "assistant", "content": response.message.content[0].text})
+                if not response.tool_calls:
+                    print(f"\n{Colors.ASSISTANT}> {Colors.RESET}{response.content}\n")
+                    self.messages.append(Message(role=Role.ASSISTANT, content=response.content))
                     break
                 
-                if response.message.tool_plan:
-                    print(f"\n{Colors.ASSISTANT}> {Colors.RESET}{response.message.tool_plan}")
+                if response.tool_plan:
+                    print(f"\n{Colors.ASSISTANT}> {Colors.RESET}{response.tool_plan}")
                 
-                self.messages.append({
-                    "role": "assistant",
-                    "tool_plan": response.message.tool_plan,
-                    "tool_calls": response.message.tool_calls
-                })
+                self.messages.append(response)
                 
-                for tc in response.message.tool_calls:
-                    tool_name = tc.function.name
-                    args = json.loads(tc.function.arguments)
-                    result_msg = self.executor.execute_tool(tool_name, args, tc.id)
+                for tc in response.tool_calls:
+                    result_msg = self.executor.execute_tool(tc.name, tc.arguments, tc.id)
                     self.messages.append(result_msg)
 
 def main():

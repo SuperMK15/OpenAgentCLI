@@ -1,31 +1,30 @@
 import json
 from .ui import Colors
+from openagentcli.protocol import ToolDefinition
 
-def display_tool_list(tools: list):
+def display_tool_list(tools: list[ToolDefinition]):
     """Display a list of all available tools."""
     print(f"\n{Colors.BOLD}Available Tools:{Colors.RESET}\n")
     for tool in tools:
-        name = tool["function"]["name"]
-        desc = tool["function"]["description"].split('\n')[0][:80]
-        print(f"  {Colors.TOOL}{name}{Colors.RESET}")
+        desc = tool.description.split('\n')[0][:80] if tool.description else ""
+        print(f"  {Colors.TOOL}{tool.name}{Colors.RESET}")
         if desc:
             print(f"    {Colors.DIM}{desc}{Colors.RESET}")
     print()
 
-def display_tool_detail(tools: list, tool_name: str):
+def display_tool_detail(tools: list[ToolDefinition], tool_name: str):
     """Display detailed information about a specific tool."""
-    tool = next((t for t in tools if t["function"]["name"] == tool_name), None)
+    tool = next((t for t in tools if t.name == tool_name), None)
     if not tool:
         print(f"\n{Colors.DIM}Tool '{tool_name}' not found{Colors.RESET}\n")
         return
     
-    func = tool["function"]
-    print(f"\n{Colors.BOLD}{func['name']}{Colors.RESET}")
-    if func.get("description"):
-        print(f"\n{func['description']}")
+    print(f"\n{Colors.BOLD}{tool.name}{Colors.RESET}")
+    if tool.description:
+        print(f"\n{tool.description}")
     
-    params = func.get("parameters", {}).get("properties", {})
-    required = func.get("parameters", {}).get("required", [])
+    params = tool.parameters.get("properties", {})
+    required = tool.parameters.get("required", [])
     
     if params:
         print(f"\n{Colors.BOLD}Parameters:{Colors.RESET}")

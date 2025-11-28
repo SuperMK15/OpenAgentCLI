@@ -1,11 +1,12 @@
 import os
 from cohere import ClientV2
 from .base import BaseModel
-from typing import List, Dict, Any
+from openagentcli.protocol import Message, ToolDefinition, CohereAdapter
 from dotenv import load_dotenv
 
 class CohereModel(BaseModel):
     def __init__(self):
+        super().__init__(CohereAdapter())
         load_dotenv()
         api_key = os.getenv("COHERE_API_KEY")
         if not api_key:
@@ -50,10 +51,15 @@ When a tool call fails:
 - Provide context for decisions when helpful
 </response_style>"""
     
-    def chat(self, messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]) -> Any:
-        messages_with_system_prompt = [{"role": "system", "content": self.system_prompt}] + messages
-        return self.client.chat(model=self.model, messages=messages_with_system_prompt, tools=tools)
+    def chat(self, messages: list[Message], tools: list[ToolDefinition]) -> Message:
+        provider_messages = self.adapter.to_provider_messages(messages)
+        provider_tools = self.adapter.to_provider_tools(tools)
+        messages_with_system = [{"role": "system", "content": self.system_prompt}] + provider_messages
+        response = self.client.chat(model=self.model, messages=messages_with_system, tools=provider_tools)
+        return self.adapter.from_provider_response(response)
     
-    def chat_stream(self, messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]) -> Any:
-        messages_with_system_prompt = [{"role": "system", "content": self.system_prompt}] + messages
-        return self.client.chat_stream(model=self.model, messages=messages_with_system_prompt, tools=tools)
+    def chat_stream(self, messages: list[Message], tools: list[ToolDefinition]) -> Message:
+        provider_messages = self.adapter.to_provider_messages(messages)
+        provider_tools = self.adapter.to_provider_tools(tools)
+        messages_with_system = [{"role": "system", "content": self.system_prompt}] + provider_messages
+        return self.client.chat_stream(model=self.model, messages=messages_with_system, tools=provider_tools)

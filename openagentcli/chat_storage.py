@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
 from datetime import datetime
+from typing import Optional
 from openagentcli.ui import Colors
+from openagentcli.protocol import Message, Role
 
 
 class ChatStorage:
@@ -9,7 +11,40 @@ class ChatStorage:
         self.chats_dir = Path.home() / ".openagentcli" / "chats"
         self.chats_dir.mkdir(parents=True, exist_ok=True)
     
-    def save(self, name: str, messages: list) -> bool:
+    def _serialize_message(self, msg: Message) -> dict:
+        """Convert Message to dict for JSON serialization"""
+        data = {"role": msg.role.value}
+        if msg.content:
+            data["content"] = msg.content
+        if msg.tool_calls:
+            data["tool_calls"] = [
+                {"id": tc.id, "name": tc.name, "arguments": tc.arguments}
+                for tc in msg.tool_calls
+            ]
+        if msg.tool_call_id:
+            data["tool_call_id"] = msg.tool_call_id
+        if msg.tool_plan:
+            data["tool_plan"] = msg.tool_plan
+        return data
+    
+    def _deserialize_message(self, data: dict) -> Message:
+        """Convert dict to Message"""
+        from openagentcli.protocol import ToolCall
+        tool_calls = None
+        if "tool_calls" in data:
+            tool_calls = [
+                ToolCall(id=tc["id"], name=tc["name"], arguments=tc["arguments"])
+                for tc in data["tool_calls"]
+            ]
+        return Message(
+            role=Role(data["role"]),
+            content=data.get("content"),
+            tool_calls=tool_calls,
+            tool_call_id=data.get("tool_call_id"),
+            tool_plan=data.get("tool_plan")
+        )
+    
+    def save(self, name: str, messages: list[Message]) -> bool:
         """Save chat to file."""
         if not messages:
             print(f"\n{Colors.ERROR}No messages to save{Colors.RESET}\n")
@@ -26,13 +61,13 @@ class ChatStorage:
         data = {
             "name": name,
             "saved_at": datetime.now().isoformat(),
-            "messages": messages
+            "messages": [self._serialize_message(msg) for msg in messages]
         }
         chat_file.write_text(json.dumps(data, indent=2))
         print(f"\n{Colors.SUCCESS}✓ Saved chat to {chat_file}{Colors.RESET}\n")
         return True
     
-    def load(self, name: str) -> list | None:
+    def load(self, name: str) -> Optional[list[Message]]:
         """Load chat from file."""
         chat_file = self.chats_dir / f"{name}.json"
         if not chat_file.exists():
@@ -40,7 +75,7 @@ class ChatStorage:
             return None
         
         data = json.loads(chat_file.read_text())
-        messages = data["messages"]
+        messages = [self._deserialize_message(msg) for msg in data["messages"]]
         print(f"\n{Colors.SUCCESS}✓ Loaded chat '{name}' ({len(messages)} messages){Colors.RESET}\n")
         return messages
     

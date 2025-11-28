@@ -2,7 +2,7 @@ import asyncio
 import os
 import readline
 import logging
-from openagentcli.models.cohere_model import CohereModel
+from openagentcli.config import load_config, load_model
 from openagentcli.server.mcp_server import mcp
 from openagentcli.ui import Colors, Spinner
 from openagentcli.chat_storage import ChatStorage
@@ -14,7 +14,8 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 class AgentCLI:
     def __init__(self):
-        self.model = CohereModel()
+        config = load_config()
+        self.model = load_model(config)
         self.messages: list[Message] = []
         self.tools: list[ToolDefinition] = asyncio.run(self._get_tools())
         functions_map = asyncio.run(self._get_functions())

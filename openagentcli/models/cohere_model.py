@@ -5,8 +5,8 @@ from openagentcli.protocol import Message, ToolDefinition, CohereAdapter
 from dotenv import load_dotenv
 
 class CohereModel(BaseModel):
-    def __init__(self):
-        super().__init__(CohereAdapter())
+    def __init__(self, custom_instructions: str = None):
+        super().__init__(CohereAdapter(), custom_instructions)
         load_dotenv()
         api_key = os.getenv("COHERE_API_KEY")
         if not api_key:
@@ -50,6 +50,9 @@ When a tool call fails:
 - Show your work when debugging or problem-solving
 - Provide context for decisions when helpful
 </response_style>"""
+        
+        if self.custom_instructions:
+            self.system_prompt += f"\n\n<custom_instructions>\n{self.custom_instructions}\n</custom_instructions>"
     
     def chat(self, messages: list[Message], tools: list[ToolDefinition]) -> Message:
         provider_messages = self.adapter.to_provider_messages(messages)

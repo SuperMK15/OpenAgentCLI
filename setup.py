@@ -15,6 +15,7 @@ setup(
         "fastmcp",
         "cohere",
         "python-dotenv",
+        "pyyaml",
         readline_pkg,
     ],
     entry_points={

@@ -25,6 +25,23 @@ Run the CLI:
 openagentcli
 ```
 
+## Configuration
+
+Modify the `config.yaml` file at the project root to customize behavior:
+
+```yaml
+# Model configuration
+model_config:
+  file_name: cohere_model
+  class_name: CohereModel
+
+# Custom instructions to inject into the system prompt
+custom_instructions: |
+  You are a helpful coding assistant.
+```
+
+The `custom_instructions` field allows you to add custom behavior or constraints to the assistant.
+
 ## Commands
 
 - `/help` - Show available commands
@@ -92,9 +109,10 @@ from openagentcli.models.base import BaseModel
 from openagentcli.protocol import Message, ToolDefinition
 
 class MyProviderModel(BaseModel):
-    def __init__(self):
-        super().__init__(MyProviderAdapter())
+    def __init__(self, custom_instructions: str = None):
+        super().__init__(MyProviderAdapter(), custom_instructions)
         # Initialize your provider's client
+        # Build system prompt and append self.custom_instructions if provided
     
     def chat(self, messages: list[Message], tools: list[ToolDefinition]) -> Message:
         provider_messages = self.adapter.to_provider_messages(messages)
@@ -105,4 +123,11 @@ class MyProviderModel(BaseModel):
     def chat_stream(self, messages: list[Message], tools: list[ToolDefinition]) -> Message:
         # Implement streaming if supported
         pass
+```
+
+3. Update `config.yaml` to use your model:
+```yaml
+model_config:
+  file_name: my_provider_model
+  class_name: MyProviderModel
 ```

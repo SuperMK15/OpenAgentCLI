@@ -1,0 +1,10 @@
+# OpenAgentCLI Configuration
+
+# Model configuration
+model_config:
+  file_name: cohere_model
+  class_name: CohereModel
+
+# Custom instructions to inject into the system prompt
+custom_instructions: |
+  You are a helpful coding assistant.

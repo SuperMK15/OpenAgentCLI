@@ -6,6 +6,7 @@ import logging
 from openagentcli.models.cohere_model import CohereModel
 from openagentcli.server.mcp_server import mcp
 from openagentcli.ui import Colors, Spinner
+from openagentcli.chat_storage import ChatStorage
 from openagentcli.tool_executor import ToolExecutor
 from openagentcli.tool_display import display_tool_list, display_tool_detail
 
@@ -18,6 +19,7 @@ class AgentCLI:
         self.tools = asyncio.run(self._get_tools())
         functions_map = asyncio.run(self._get_functions())
         self.executor = ToolExecutor(functions_map)
+        self.storage = ChatStorage()
         
         readline.parse_and_bind(r'"\e[A": previous-history')
         readline.parse_and_bind(r'"\e[B": next-history')
@@ -66,12 +68,17 @@ class AgentCLI:
             
             if user_input == '/help':
                 print(f"\n{Colors.BOLD}Commands:{Colors.RESET}")
-                print(f"  /help         - Show this help")
-                print(f"  /tools        - List all available tools")
-                print(f"  /tools <name> - Show details for a specific tool")
-                print(f"  /clear        - Clear chat context")
-                print(f"  /quit         - Exit the CLI")
-                print(f"  !<command>    - Execute bash command\n")
+                print(f"  /help              - Show this help")
+                print(f"  /tools             - List all available tools")
+                print(f"  /tools <name>      - Show details for a specific tool")
+                print(f"  /save <name>       - Save current chat")
+                print(f"  /load <name>       - Load saved chat")
+                print(f"  /list-saved        - List all saved chats")
+                print(f"  /delete <name>     - Delete a saved chat")
+                print(f"  /clear-saved       - Delete all saved chats")
+                print(f"  /clear             - Clear chat context")
+                print(f"  /quit              - Exit the CLI")
+                print(f"  !<command>         - Execute bash command\n")
                 continue
             
             if user_input == '/tools':
@@ -83,9 +90,64 @@ class AgentCLI:
                 display_tool_detail(self.tools, tool_name)
                 continue
             
+            if user_input.startswith('/save '):
+                name = user_input[6:].strip()
+                if name:
+                    self.storage.save(name, self.messages)
+                else:
+                    print(f"\n{Colors.ERROR}Usage: /save <name>{Colors.RESET}\n")
+                continue
+            
+            if user_input.startswith('/load '):
+                name = user_input[6:].strip()
+                if name:
+                    if self.messages:
+                        print(f"{Colors.WARNING}Current chat will be replaced. Continue? (y/n): {Colors.RESET}", end='')
+                        confirm = input().strip().lower()
+                        if confirm != 'y':
+                            print(f"\n{Colors.DIM}Load cancelled{Colors.RESET}\n")
+                            continue
+                    messages = self.storage.load(name)
+                    if messages is not None:
+                        self.messages = messages
+                else:
+                    print(f"\n{Colors.ERROR}Usage: /load <name>{Colors.RESET}\n")
+                continue
+            
+            if user_input == '/list-saved':
+                self.storage.list_all()
+                continue
+            
+            if user_input.startswith('/delete '):
+                name = user_input[8:].strip()
+                if name:
+                    print(f"{Colors.WARNING}Delete chat '{name}'? (y/n): {Colors.RESET}", end='')
+                    confirm = input().strip().lower()
+                    if confirm == 'y':
+                        self.storage.delete(name)
+                    else:
+                        print(f"\n{Colors.DIM}Delete cancelled{Colors.RESET}\n")
+                else:
+                    print(f"\n{Colors.ERROR}Usage: /delete <name>{Colors.RESET}\n")
+                continue
+            
+            if user_input == '/clear-saved':
+                print(f"{Colors.WARNING}Delete all saved chats? (y/n): {Colors.RESET}", end='')
+                confirm = input().strip().lower()
+                if confirm == 'y':
+                    self.storage.clear_all()
+                else:
+                    print(f"\n{Colors.DIM}Clear cancelled{Colors.RESET}\n")
+                continue
+            
             if user_input == '/clear':
                 self.messages = []
                 print(f"\n{Colors.DIM}Chat context cleared{Colors.RESET}\n")
+                continue
+            
+            if user_input.startswith('/'):
+                print(f"\n{Colors.ERROR}Unknown command: {user_input}{Colors.RESET}")
+                print(f"{Colors.DIM}Type /help for available commands{Colors.RESET}\n")
                 continue
             
             if not user_input:

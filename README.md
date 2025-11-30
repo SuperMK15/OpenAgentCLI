@@ -2,6 +2,87 @@
 
 A coding agent with MCP server and native tool calling.
 
+## High-Level Architecture
+```mermaid
+flowchart TB
+
+%% ========================
+%% LAYERS
+%% ========================
+
+subgraph PresentationLayer["Presentation Layer"]
+    User(["🧑‍💻 User"])
+    CLI["💬 CLI Interface"]
+end
+
+subgraph LLMLayer["LLM Layer"]
+    ProtocolAdapter["🔌 Protocol Adapter"]
+    BaseModel["🧠 BaseModel"]
+    ModelCall["🌐 API / 🖥️ Local LLM Call"]
+end
+
+subgraph InfrastructureLayer["Infrastructure Layer"]
+    Config["⚙️ Config Loader"]
+    Storage[("🗄️ Message Store")]
+end
+
+subgraph ToolLayer["Tool Layer"]
+    ToolExec["🛠️ Tool Executor"]
+    MCP["🔗 MCP Server"]
+end
+
+%% ========================
+%% FLOWS
+%% ========================
+
+User -- input --> CLI
+CLI -- user msg --> ProtocolAdapter
+ProtocolAdapter -- send to model --> BaseModel
+BaseModel -- response: msg or toolcall --> ProtocolAdapter
+ProtocolAdapter -- msg/toolcall result --> CLI
+
+CLI -- save/load chat history <--> Storage
+CLI -- load settings --> Config
+
+ProtocolAdapter <-- tool call --> ToolExec
+ToolExec -- call --> MCP
+MCP -- result --> ToolExec
+
+%% BaseModel call
+BaseModel -- call --> ModelCall
+
+%% ========================
+%% STYLING
+%% ========================
+
+User:::presentation
+CLI:::presentation
+ProtocolAdapter:::llm
+BaseModel:::llm
+ModelCall:::llm
+Config:::infra
+Storage:::infra
+ToolExec:::tools
+MCP:::tools
+
+classDef presentation fill:#E3F2FD,stroke:#1565C0,stroke-width:1.5px,color:#0D47A1
+classDef llm fill:#E8F5E9,stroke:#2E7D32,stroke-width:1.5px,color:#1B5E20
+classDef tools fill:#FFF3E0,stroke:#EF6C00,stroke-width:1.5px,color:#E65100
+classDef infra fill:#F3E5F5,stroke:#8E24AA,stroke-width:1.5px,color:#4A148C
+
+%% ========================
+%% LINKS
+%% ========================
+
+click CLI "https://github.com/SuperMK15/OpenAgentCLI/tree/main/openagentcli/main.py"
+click ProtocolAdapter "https://github.com/SuperMK15/OpenAgentCLI/tree/main/openagentcli/protocol/adapter.py"
+click BaseModel "https://github.com/SuperMK15/OpenAgentCLI/tree/main/openagentcli/models/base.py"
+click Config "https://github.com/SuperMK15/OpenAgentCLI/tree/main/openagentcli/config.py"
+click Storage "https://github.com/SuperMK15/OpenAgentCLI/tree/main/openagentcli/chat_storage.py"
+click ToolExec "https://github.com/SuperMK15/OpenAgentCLI/tree/main/openagentcli/tool_executor.py"
+click MCP "https://github.com/SuperMK15/OpenAgentCLI/tree/main/openagentcli/server/mcp_server.py"
+```
+
 ## Installation
 
 ```bash
